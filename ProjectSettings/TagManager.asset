@@ -42,3 +42,33 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: backGround
+    uniqueID: 3398085899
+    locked: 0
+  - name: backGroundFloor
+    uniqueID: 1954515459
+    locked: 0
+  - name: backGroundBricks
+    uniqueID: 3589724739
+    locked: 0
+  - name: ground
+    uniqueID: 2524852673
+    locked: 0
+  - name: groundFloor
+    uniqueID: 3109071293
+    locked: 0
+  - name: groundBricks
+    uniqueID: 726546977
+    locked: 0
+  - name: player
+    uniqueID: 2073785551
+    locked: 0
+  - name: foreGround
+    uniqueID: 3143021051
+    locked: 0
+  - name: foreGroundFloor
+    uniqueID: 3839295259
+    locked: 0
+  - name: foreGroundBricks
+    uniqueID: 4069842439
+    locked: 0
