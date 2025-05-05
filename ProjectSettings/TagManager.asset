@@ -54,6 +54,9 @@ TagManager:
   - name: ground
     uniqueID: 2524852673
     locked: 0
+  - name: groundDecoration
+    uniqueID: 1506931491
+    locked: 0
   - name: groundFloor
     uniqueID: 3109071293
     locked: 0
