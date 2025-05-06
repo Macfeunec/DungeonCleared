@@ -54,11 +54,23 @@ TagManager:
   - name: backGround
     uniqueID: 3398085899
     locked: 0
+  - name: backGroundBricks
+    uniqueID: 3589724739
+    locked: 0
   - name: backGroundFloor
     uniqueID: 1954515459
     locked: 0
-  - name: backGroundBricks
-    uniqueID: 3589724739
+  - name: backGroundCloseDecoration
+    uniqueID: 396699525
+    locked: 0
+  - name: backGroundClose
+    uniqueID: 646595441
+    locked: 0
+  - name: backGroundCloseBricks
+    uniqueID: 8829349
+    locked: 0
+  - name: backGroundCloseFloor
+    uniqueID: 901772159
     locked: 0
   - name: groundDecoration
     uniqueID: 1506931491
@@ -66,11 +78,11 @@ TagManager:
   - name: ground
     uniqueID: 2524852673
     locked: 0
-  - name: groundFloor
-    uniqueID: 3109071293
-    locked: 0
   - name: groundBricks
     uniqueID: 726546977
+    locked: 0
+  - name: groundFloor
+    uniqueID: 3109071293
     locked: 0
   - name: player
     uniqueID: 2073785551
@@ -81,9 +93,9 @@ TagManager:
   - name: foreGround
     uniqueID: 3143021051
     locked: 0
-  - name: foreGroundFloor
-    uniqueID: 3839295259
-    locked: 0
   - name: foreGroundBricks
     uniqueID: 4069842439
+    locked: 0
+  - name: foreGroundFloor
+    uniqueID: 3839295259
     locked: 0
