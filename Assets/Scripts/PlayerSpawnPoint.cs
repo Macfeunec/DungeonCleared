@@ -22,8 +22,8 @@ public class PlayerSpawnPoint : MonoBehaviour
                     PlayerController playerController = player.GetComponent<PlayerController>();
                     if (playerController != null)
                     {
-                        playerController.SimulateJump(jumpForce);
-                        playerController.SimulateHorizontalMovement(spawnDirection, true);
+                        playerController.SimulateJump(jumpForce, false, false);
+                        playerController.SimulateHorizontalMovement(spawnDirection, 2f, true, false);
                     }
                 }
             }

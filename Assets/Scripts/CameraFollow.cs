@@ -8,6 +8,8 @@ public class CameraFollow : MonoBehaviour
     [SerializeField] private float smoothSpeed = 0.125f; 
     [SerializeField] private Vector3 offset;
 
+    private bool isLingerEnabled;
+
     void FixedUpdate()
     {
         // Calculer la position souhaitée de la caméra
@@ -18,5 +20,23 @@ public class CameraFollow : MonoBehaviour
 
         // Appliquer la position de la caméra
         transform.position = smoothedPosition;
+    }
+
+    public void DisableLinger()
+    {
+        isLingerEnabled = false;
+    }
+
+    public void ForceSnapToTarget()
+    {
+        if (player != null)
+        {
+            transform.position = new Vector3(player.position.x, player.position.y, transform.position.z);
+        }
+    }
+
+    public void EnableLinger()
+    {
+        isLingerEnabled = true;
     }
 }

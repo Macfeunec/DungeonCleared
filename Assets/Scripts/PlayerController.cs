@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float deceleration = 30f;
     [SerializeField] private float maxSpeed = 8f;
     private float moveInput;
+    private bool isMovingEnabled;
 
     [Header("Saut")]
     [SerializeField] private float jumpForce = 21f;
@@ -32,14 +33,22 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
+    void Start()
+    {
+        isMovingEnabled = false; 
+    }
+
     void Update()
     {
         // Lecture des inputs
-        moveInput = Input.GetAxisRaw("Horizontal");
-        if (Input.GetButtonDown("Jump") && coyoteTimeCounter > 0f)
+        if (isMovingEnabled)
         {
-            isJumping = true;
-            coyoteTimeCounter = 0f; 
+            moveInput = Input.GetAxisRaw("Horizontal");
+            if (Input.GetButtonDown("Jump") && coyoteTimeCounter > 0f)
+            {
+                isJumping = true;
+                coyoteTimeCounter = 0f; 
+            }
         }
     }
 
@@ -53,6 +62,22 @@ public class PlayerController : MonoBehaviour
         else coyoteTimeCounter -= Time.fixedDeltaTime;
     }
 
+
+    public void EnableMovement()
+    {
+        isMovingEnabled = true;
+    }
+
+    public void DisableMovement()
+    {
+        isMovingEnabled = false;
+    }
+
+    public void StopHorizontalMovement()
+    {
+        DisableMovement();
+        rb.velocity = new Vector2(0, rb.velocity.y); // Arrête le mouvement horizontal
+    }
 
     private void HandleMovements()
     {
@@ -93,33 +118,47 @@ public class PlayerController : MonoBehaviour
         rb.velocity = new Vector2(xMovement, yMovement);
     }
 
-    public void SimulateJump(float jumpForce)
+    public void SimulateJump(float jumpForce, bool untilFloorTouched, bool forever)
     {
-        if (rb == null) return;
-        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+        StartCoroutine(SimulateJumpCoroutine(jumpForce, untilFloorTouched, forever));
     }
 
-    public void SimulateHorizontalMovement(Direction direction, bool untilFloorTouched)
-    {
-        StartCoroutine(SimulateHorizontalMovementCoroutine(direction, untilFloorTouched));
-    }
-
-    private IEnumerator SimulateHorizontalMovementCoroutine(Direction direction, bool untilFloorTouched)
+    private IEnumerator SimulateJumpCoroutine(float jumpForce, bool untilFloorTouched, bool forever)
     {
         if (rb == null) yield break;
 
-        float xMovement = (direction == Direction.Left) ? -maxSpeed :
-                        (direction == Direction.Right) ? maxSpeed : 0f;
+        // Une fois au sol (ou si not untilFloorTouched), applique une fois le saut
+        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+
+        // Si untilFloorTouched est activé, continue le saut jusqu'à toucher le sol
+        while ((untilFloorTouched && !isGrounded) || forever)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            yield return null; // Attend une frame avant de continuer
+        }
+    }
+
+    public void SimulateHorizontalMovement(Direction direction, float multiplier, bool untilFloorTouched, bool forever)
+    {
+        StartCoroutine(SimulateHorizontalMovementCoroutine(direction, multiplier, untilFloorTouched, forever));
+    }
+
+    private IEnumerator SimulateHorizontalMovementCoroutine(Direction direction, float multiplier, bool untilFloorTouched, bool forever)
+    {
+        if (rb == null) yield break;
+
+        float xMovement = (direction == Direction.Left) ? -maxSpeed * multiplier :
+                        (direction == Direction.Right) ? maxSpeed * multiplier : 0f;
+
+        // Une fois au sol (ou si not untilFloorTouched), applique une fois le mouvement
+        rb.velocity = new Vector2(xMovement, rb.velocity.y);
 
         // Si untilFloorTouched est activé, continue le mouvement jusqu'à toucher le sol
-        while (untilFloorTouched && !isGrounded)
+        while ((untilFloorTouched && !isGrounded) || forever)
         {
             rb.velocity = new Vector2(xMovement, rb.velocity.y);
             yield return null; // Attend une frame avant de continuer
         }
-
-        // Une fois au sol (ou si not untilFloorTouched), applique une dernière fois le mouvement
-        rb.velocity = new Vector2(xMovement, rb.velocity.y);
     }
 
 
