@@ -3,6 +3,9 @@ using UnityEngine;
 public class PlayerSpawnPoint : MonoBehaviour
 {
     [SerializeField] private int spawnID;
+    [SerializeField] private bool fromBellow;
+    [SerializeField] private Direction spawnDirection;
+    [SerializeField] private float jumpForce;
 
     void Start()
     {
@@ -13,7 +16,24 @@ public class PlayerSpawnPoint : MonoBehaviour
             if (player != null)
             {
                 player.transform.position = transform.position;
+
+                if (fromBellow)
+                {
+                    PlayerController playerController = player.GetComponent<PlayerController>();
+                    if (playerController != null)
+                    {
+                        playerController.SimulateJump(jumpForce);
+                        playerController.SimulateHorizontalMovement(spawnDirection, true);
+                    }
+                }
             }
         }
     }
+}
+
+public enum Direction
+{
+    None,
+    Left,
+    Right
 }

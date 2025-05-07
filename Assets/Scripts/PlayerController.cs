@@ -25,10 +25,9 @@ public class PlayerController : MonoBehaviour
     public bool isGrounded;
 
     [Header("Références")]
-    private Rigidbody2D rb;    
+    private Rigidbody2D rb;
 
-
-    void Start()
+    void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
     }
@@ -93,6 +92,36 @@ public class PlayerController : MonoBehaviour
         // Appliquer les mouvements au Rigidbody
         rb.velocity = new Vector2(xMovement, yMovement);
     }
+
+    public void SimulateJump(float jumpForce)
+    {
+        if (rb == null) return;
+        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+    }
+
+    public void SimulateHorizontalMovement(Direction direction, bool untilFloorTouched)
+    {
+        StartCoroutine(SimulateHorizontalMovementCoroutine(direction, untilFloorTouched));
+    }
+
+    private IEnumerator SimulateHorizontalMovementCoroutine(Direction direction, bool untilFloorTouched)
+    {
+        if (rb == null) yield break;
+
+        float xMovement = (direction == Direction.Left) ? -maxSpeed :
+                        (direction == Direction.Right) ? maxSpeed : 0f;
+
+        // Si untilFloorTouched est activé, continue le mouvement jusqu'à toucher le sol
+        while (untilFloorTouched && !isGrounded)
+        {
+            rb.velocity = new Vector2(xMovement, rb.velocity.y);
+            yield return null; // Attend une frame avant de continuer
+        }
+
+        // Une fois au sol (ou si not untilFloorTouched), applique une dernière fois le mouvement
+        rb.velocity = new Vector2(xMovement, rb.velocity.y);
+    }
+
 
     void OnTriggerEnter2D(Collider2D other)
     {
