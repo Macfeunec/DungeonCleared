@@ -29,35 +29,39 @@ public class SceneFader : MonoBehaviour
     }
 
 
-    // This method is called to fade to a new scene
+    // Méthode publique pour déclencher la transition de scène
+    // Prend une chaîne de caractères pour le nom de la scène en paramètre
     public void FadeToScene(string sceneName)
     {
         if (isFading) return; 
         StartCoroutine(FadeAndSwitchScenes(sceneName));
     }
 
+    // Méthode publique pour déclencher la transition de scène au spawn du joueur
     public void FadeInAtSpawn()
     {
         if (isFading) return; 
         StartCoroutine(FadeIn());
     }
 
-    // This coroutine handles the fading effect and scene switching
+    // Coroutine pour gérer la transition de scène
+    // Prend une chaîne de caractères pour le nom de la scène en paramètre
     private IEnumerator FadeAndSwitchScenes(string sceneName)
     {
         isFading = true;
 
-        yield return StartCoroutine(FadeOut(sceneName));
-        yield return StartCoroutine(FadeIn());
+        yield return StartCoroutine(FadeOut(sceneName));    // Appelle la coroutine FadeOut qui gère le fondu à la sortie de la scène et la transition de scène
+        yield return StartCoroutine(FadeIn());              // Appelle la coroutine FadeIn qui gère le fondu à l'entrée de la nouvelle scène
 
         isFading = false;
     }
 
-    // This coroutine fades the screen out and loads the new scene
+    // Coroutine pour gérer le fondu à la sortie de la scène
     private IEnumerator FadeOut(string sceneName)
     {
-        yield return StartCoroutine(Fade(1));
+        yield return StartCoroutine(Fade(1)); // Appelle la coroutine Fade qui gère le fondu (1 pour fade out)
 
+        // Charge la nouvelle scène de manière asynchrone
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
         asyncLoad.allowSceneActivation = false;
         while (asyncLoad.progress < 0.9f)
@@ -71,23 +75,28 @@ public class SceneFader : MonoBehaviour
             yield return null;
         }
 
-        yield return null;
+        yield return null; // Attend une frame après le Start
     }
 
-    // This coroutine fades the screen in and enables player movement
+    // Coroutine pour gérer le fondu à l'entrée de la scène
     private IEnumerator FadeIn()
     {
+        // Script de caméra pour gérer le mouvement de la caméra
+        // Inutilisé car Cinémachine est utilisé pour le mouvement de la caméra
+        /* 
         CameraFollow cam = FindObjectOfType<CameraFollow>();
         if (cam != null)
         {
-            cam.DisableLinger();
+            cam.DisableLinger();                    
             cam.ForceSnapToTarget();
             yield return new WaitForSeconds(0.1f);
             cam.EnableLinger();
         }
+        */
 
-        yield return StartCoroutine(Fade(0)); 
+        yield return StartCoroutine(Fade(0)); // Appelle la coroutine Fade qui gère le fondu (0 pour fade in)
 
+        // Réactive le mouvement du joueur après le fondu
         PlayerController player = FindObjectOfType<PlayerController>();
         if (player != null)
         {
@@ -95,18 +104,20 @@ public class SceneFader : MonoBehaviour
         }
     }
 
-    // This coroutine handles the actual fading effect
+    // Coroutine pour gérer le fondu
+    // Prend un float pour la valeur alpha cible (0 pour fade in, 1 pour fade out)
     private IEnumerator Fade(float targetAlpha)
     {
-        fadeCanvasGroup.alpha = 1 - targetAlpha;
+        fadeCanvasGroup.alpha = 1 - targetAlpha; // Initialise la valeur alpha selon la cible ()
         float speed = Mathf.Abs(fadeCanvasGroup.alpha - targetAlpha) / fadeDuration;
 
+        // Boucle jusqu'à ce que la valeur alpha atteigne la cible
         while (!Mathf.Approximately(fadeCanvasGroup.alpha, targetAlpha))
         {
             fadeCanvasGroup.alpha = Mathf.MoveTowards(fadeCanvasGroup.alpha, targetAlpha, speed * Time.deltaTime);
             yield return null;
         }
-
-        fadeCanvasGroup.alpha = targetAlpha;
+        
+        fadeCanvasGroup.alpha = targetAlpha; // Assure que la valeur alpha est exactement égale à la cible
     }
 }

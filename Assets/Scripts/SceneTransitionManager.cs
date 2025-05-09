@@ -11,7 +11,7 @@ public class SceneTransitionManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Persiste entre les scènes
+            DontDestroyOnLoad(gameObject); 
         }
         else
         {
@@ -21,19 +21,19 @@ public class SceneTransitionManager : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("Player spawned");
         if (spawnID == 0)
         {
-            Debug.Log("Starting fade in at spawn");
-            SceneFader.Instance.FadeInAtSpawn(); // Appel de la méthode FadeInAtSpawn si spawnID est 0
+            SceneFader.Instance.FadeInAtSpawn(); // Appel de la méthode FadeInAtSpawn si spawnID est 0 (démarrage ou resp)
         }
     }
 
+    // Méthode publique pour définir l'ID de spawn
     public void SetSpawnID(int id)
     {
         spawnID = id;
     }
 
+    // Méthode publique pour obtenir l'ID de spawn
     public int GetSpawnID()
     {
         return spawnID;

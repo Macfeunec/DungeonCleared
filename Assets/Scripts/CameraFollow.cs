@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Cette classe ne sert actuellemnt à rien car la caméra suit le joueur avec Cinemachine
+// mais elle est laissée pour le moment au cas où on voudrait l'utiliser plus tard
+
 public class CameraFollow : MonoBehaviour
 {
     [SerializeField] private Transform player; 

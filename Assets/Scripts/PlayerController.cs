@@ -62,23 +62,26 @@ public class PlayerController : MonoBehaviour
         else coyoteTimeCounter -= Time.fixedDeltaTime;
     }
 
-
+    // Méthode publique pour activer le mouvement
     public void EnableMovement()
     {
         isMovingEnabled = true;
     }
 
+    // Méthode publique pour désactiver le mouvement
     public void DisableMovement()
     {
         isMovingEnabled = false;
     }
 
+    // Méthode publique pour stopper le mouvement horizontal
     public void StopHorizontalMovement()
     {
         DisableMovement();
         rb.velocity = new Vector2(0, rb.velocity.y); // Arrête le mouvement horizontal
     }
 
+    // Méthode privée pour gérer les mouvements du joueur
     private void HandleMovements()
     {
         float xMovement = rb.velocity.x; // Conserver la vitesse horizontale actuelle
@@ -118,6 +121,7 @@ public class PlayerController : MonoBehaviour
         rb.velocity = new Vector2(xMovement, yMovement);
     }
 
+    // Méthode publique pour simuler un saut
     public void SimulateJump(float jumpForce, bool untilFloorTouched, bool forever)
     {
         StartCoroutine(SimulateJumpCoroutine(jumpForce, untilFloorTouched, forever));
@@ -138,6 +142,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // Méthode publique pour simuler un mouvement horizontal
     public void SimulateHorizontalMovement(Direction direction, float multiplier, bool untilFloorTouched, bool forever)
     {
         StartCoroutine(SimulateHorizontalMovementCoroutine(direction, multiplier, untilFloorTouched, forever));
@@ -161,7 +166,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-
+    
     void OnTriggerEnter2D(Collider2D other)
     {
         // Vérifie si le joueur touche le sol
