@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 2
   tags:
   - Gateway
+  - Ground
   layers:
   - Default
   - TransparentFX
@@ -17,8 +18,8 @@ TagManager:
   - Sharp Render
   - Blurred Render
   - 
-  - 
-  - 
+  - Player
+  - Enemy
   - 
   - 
   - 
@@ -86,6 +87,9 @@ TagManager:
     locked: 0
   - name: player
     uniqueID: 2073785551
+    locked: 0
+  - name: enemy
+    uniqueID: 337455375
     locked: 0
   - name: foreGroundDecoration
     uniqueID: 3701249925

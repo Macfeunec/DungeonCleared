@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1714913894440935272}
   - component: {fileID: 7636346297065108451}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Sprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -94,7 +94,7 @@ GameObject:
   m_Component:
   - component: {fileID: 946806862613368444}
   - component: {fileID: 7146050794348858968}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Light 2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -179,7 +179,9 @@ GameObject:
   - component: {fileID: 5099557491615546038}
   - component: {fileID: 1750204158954313537}
   - component: {fileID: 3922496688666813701}
-  m_Layer: 0
+  - component: {fileID: 637202278766614280}
+  - component: {fileID: 7624681959720033599}
+  m_Layer: 11
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -343,3 +345,29 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   isGrounded: 0
+--- !u!114 &637202278766614280
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6553749925974931603}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 802b47b949248214985d237a06a487eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 5
+--- !u!114 &7624681959720033599
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6553749925974931603}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6d8fc84478214341983915e3f6b1637, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  knockBackResistance: 1
