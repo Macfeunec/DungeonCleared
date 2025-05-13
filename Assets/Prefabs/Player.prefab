@@ -666,6 +666,7 @@ GameObject:
   - component: {fileID: 3922496688666813701}
   - component: {fileID: 637202278766614280}
   - component: {fileID: 7624681959720033599}
+  - component: {fileID: 7819599546725513250}
   - component: {fileID: 3811151250592018130}
   m_Layer: 11
   m_Name: Player
@@ -827,7 +828,8 @@ MonoBehaviour:
   isStopped: 0
   attackRange: 1
   attackDamage: 10
-  attackCooldown: 0.3
+  attackCooldown: 0.1
+  knockBackDuration: 0.2
   jumpForce: 32
   coyoteTime: 0.1
   fallMultiplier: 1.1
@@ -835,7 +837,6 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 128
-  isGrounded: 0
 --- !u!114 &637202278766614280
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -848,7 +849,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 802b47b949248214985d237a06a487eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 5
+  maxHealth: 50
+  currentHealth: 0
+  isPlayer: 0
+  isInvincible: 0
+  damageEffect: {fileID: 2536943655439069875, guid: ded22a3ce8d6a9e4fb2bc1ccd76add11, type: 3}
+  deathEffect: {fileID: 0}
 --- !u!114 &7624681959720033599
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -862,6 +868,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   knockBackResistance: 1
+--- !u!114 &7819599546725513250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6553749925974931603}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 584879def77a1d54eb483de68adf705e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerHealth: 0
+  playerPositionX: 0
+  playerPositionY: 0
+  playerDirection: 0
+  playerSpawnID: 0
+  currentScene: 
 --- !u!95 &3811151250592018130
 Animator:
   serializedVersion: 5

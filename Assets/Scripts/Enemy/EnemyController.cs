@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public enum EnemyClass
 {
@@ -16,25 +17,29 @@ public class EnemyController : MonoBehaviour, IMovable
     [SerializeField] private GameObject swordBody;
     [SerializeField] private GameObject capeBody;
     [SerializeField] private GameObject hammerBody;
+    [SerializeField] private TrailRenderer trailRenderer;
     [SerializeField] private bool isIdleEnemy;
     [SerializeField] private bool isJumpingEnemy;
     [SerializeField] private bool isRunningEnemy;
-    [SerializeField] private bool isIdle = false; // RETIRER SERIALIZEFIELD APRES TEST
+    [SerializeField] private bool isFriendlyEnemy;
+    private bool isIdle = false;
     private Animator animator;
 
     [Header("Cibles")]
-    [SerializeField] private GameObject[] targets;
     [SerializeField] private float detectionRadius;
     [SerializeField] private float triggerdDetectionRadius;
     [SerializeField] private float attackRadius = 3f; 
-    [SerializeField] private bool backEyes; // Si l'ennemi peut regarder derrière lui
+    private bool backEyes; // Si l'ennemi peut regarder derrière lui
     [SerializeField] private float detectionCooldown = 0.5f;
+    private GameObject[] targets;
     private float currentDetectionRadius;
-    [SerializeField] private bool isTargetInSight = false; // RETIRER SERIALIZEFIELD APRES TEST
+    private bool isTargetInSight = false; 
     private Transform currentTarget;
-    [SerializeField] private bool isPatroling = false; // RETIRER SERIALIZEFIELD APRES TEST
+    private bool isPatroling = false; 
 
     [Header("Mouvement")]
+    [SerializeField] private float acceleration = 20f;
+    [SerializeField] private float deceleration = 30f;
     [SerializeField] private float patrolSpeed;
     [SerializeField] private float chaseSpeed;
     [SerializeField] private float jumpForce;
@@ -48,8 +53,9 @@ public class EnemyController : MonoBehaviour, IMovable
     [SerializeField] private float damage;
     [SerializeField] private float attackCooldown = 2f;
     [SerializeField] private float knockBackDuration = 0.5f;
-    [SerializeField] private bool isAttacking = false;
+    private bool isAttacking = false;
     private bool canAttack = true;
+    private bool isDead = false;
 
     private bool isStunned = false;
     public bool IsStunned => isStunned;
@@ -61,16 +67,47 @@ public class EnemyController : MonoBehaviour, IMovable
 
     void Awake()
     {
-        SetClassVisual();
-    }
-  
-    void Start()
-    {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponentInChildren<Animator>();
 
+        SetClassVisual();
+        DisableTrail();
+
+        // S'abonner à l'événement de chargement de scène
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDestroy()
+    {
+        // Se désabonner de l'événement pour éviter les erreurs
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void Start()
+    {
+        isTargetInSight = false;
+
         collisionLayer = LayerMask.GetMask("Collision");
         StartCoroutine(DetectionRoutine());
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Mettre à jour la référence au joueur après le chargement de la scène
+        if (!isFriendlyEnemy)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                targets = new GameObject[1];
+                targets[0] = player;
+            }
+            else
+            {
+                Debug.LogWarning("Player not found in the scene!");
+                targets = new GameObject[0]; // Initialiser avec une liste vide
+            }
+        }
     }
 
     private IEnumerator DetectionRoutine()
@@ -95,28 +132,21 @@ public class EnemyController : MonoBehaviour, IMovable
             animator.SetBool("isPatroling", isPatroling || isTargetInSight);
         }
         animator.SetBool("isIdle", isIdle);
-        switch (enemyClass)
-        {
-            case EnemyClass.Sword:
-                animator.SetBool("isSlashing", isAttacking);
-                break;
-            
-            case EnemyClass.Hammer:
-                animator.SetBool("isHammering", isAttacking);
-                break;
-
-            case EnemyClass.Cape:
-                animator.SetBool("isDashing", isAttacking);
-                break;
-        }
     }
 
     void FixedUpdate()
     {
-        // Gérer le mouvement de l'ennemi
-        if (!isStunned && !isAttacking) GroundMovement();
-
-        HandleAttack();
+        if (!isDead)
+        {
+            // Gérer le mouvement de l'ennemi
+            GroundMovement();
+            HandleAttack();
+        }
+        else
+        {
+            if (isGrounded) rb.bodyType = RigidbodyType2D.Static;
+        }
+        
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -148,39 +178,68 @@ public class EnemyController : MonoBehaviour, IMovable
 
     private void GroundMovement()
     {
-        // Vérifier si la cible est dans le champ de vision
-        if (!isTargetInSight) 
+        if (isStunned)
         {
-            backEyes = false;
-            currentDetectionRadius = detectionRadius;
-
-            if (isIdleEnemy)
-            {
-                // Si l'ennemi est inactif, il ne fait rien
-                rb.velocity = new Vector2(0f, rb.velocity.y);
-
-                isIdle = true;
-            }
-            else
-            {
-                // Si la cible n'est pas dans le champ de vision, l'ennemi patrouille
-                GroundPatrol();
-
-                isPatroling = true;
-                isIdle = false;
-            }
-            
-        }
-        else
-        {   
-            // Si la cible est dans le champ de vision, l'ennemi la poursuit
+            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y);
             currentDetectionRadius = triggerdDetectionRadius;
             backEyes = true;
-            ChaseTarget();
-
-            isPatroling = false;
-            isIdle = false;
+            DetectTargets();
         }
+        else if (isAttacking)
+        {
+            float xMovement = rb.velocity.x; // Conserver la vitesse horizontale actuelle
+            float targetSpeed = 0f;
+            float speedDiff = targetSpeed - xMovement;
+            float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+            float movement = speedDiff * accelRate;
+            xMovement += movement * Time.fixedDeltaTime;
+
+            rb.velocity = new Vector2(xMovement, rb.velocity.y);
+        }
+        else
+        {
+            // Vérifier si la cible est dans le champ de vision
+            if (!isTargetInSight) 
+            {
+                backEyes = false;
+                currentDetectionRadius = detectionRadius;
+
+                if (isIdleEnemy)
+                {
+                    // Si l'ennemi est inactif, il ne fait rien
+                    float xMovement = rb.velocity.x; // Conserver la vitesse horizontale actuelle
+                    float targetSpeed = 0f;
+                    float speedDiff = targetSpeed - xMovement;
+                    float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+                    float movement = speedDiff * accelRate;
+                    xMovement += movement * Time.fixedDeltaTime;
+
+                    rb.velocity = new Vector2(xMovement, rb.velocity.y);
+
+                    isIdle = true;
+                }
+                else
+                {
+                    // Si la cible n'est pas dans le champ de vision, l'ennemi patrouille
+                    GroundPatrol();
+
+                    isPatroling = true;
+                    isIdle = false;
+                }
+                
+            }
+            else
+            {   
+                // Si la cible est dans le champ de vision, l'ennemi la poursuit
+                currentDetectionRadius = triggerdDetectionRadius;
+                backEyes = true;
+                ChaseTarget();
+
+                isPatroling = false;
+                isIdle = false;
+            }
+        }
+        
     }
 
     // Méthode pour gérer le mouvement de patrouille de l'ennemi
@@ -195,7 +254,14 @@ public class EnemyController : MonoBehaviour, IMovable
         }
         // Déplacer l'ennemi
         float speedMultiplier = isRunningEnemy ? 1f : 0.5f;
-        rb.velocity = new Vector2(transform.localScale.x * patrolSpeed * speedMultiplier, rb.velocity.y);      
+        float xMovement = rb.velocity.x; // Conserver la vitesse horizontale actuelle
+        float targetSpeed = transform.localScale.x * patrolSpeed * speedMultiplier;
+        float speedDiff = targetSpeed - xMovement;
+        float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+        float movement = speedDiff * accelRate;
+        xMovement += movement * Time.fixedDeltaTime;
+
+        rb.velocity = new Vector2(xMovement, rb.velocity.y);    
     }
 
     // Méthode pour détecter les obstacles
@@ -246,13 +312,21 @@ public class EnemyController : MonoBehaviour, IMovable
             return;
         }
 
-
-        float moveSpeed = isRunningEnemy ? chaseSpeed : chaseSpeed * 0.5f;
-
         if (Mathf.Abs(xDiff) > 1f)
         {
+            float moveSpeed = isRunningEnemy ? chaseSpeed : chaseSpeed * 0.5f;
+
             transform.localScale = new Vector3(direction, transform.localScale.y, transform.localScale.z);
-            rb.velocity = new Vector2(direction * moveSpeed, rb.velocity.y);
+
+            float xMovement = rb.velocity.x; // Conserver la vitesse horizontale actuelle
+            float targetSpeed = direction * moveSpeed;
+            float speedDiff = targetSpeed - xMovement;
+            float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+            float movement = speedDiff * accelRate;
+            xMovement += movement * Time.fixedDeltaTime;
+
+            rb.velocity = new Vector2(xMovement, rb.velocity.y);    
+            
         }
 
         float heightDiff = currentTarget.position.y - transform.position.y;
@@ -267,35 +341,37 @@ public class EnemyController : MonoBehaviour, IMovable
 
     private void HandleAttack()
     {
-        if (!isStunned)
-        {
-            AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(0);
+        AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(0);
 
-            switch (enemyClass)
-            {
-                case EnemyClass.Sword:
-                    if (info.IsName("KnightAttackSword") && info.normalizedTime >= 1f)
-                    {
-                        isAttacking = false;
-                    }
-                    break;
-                                
-                case EnemyClass.Hammer:
-                    // Animation d'attaque
-                    break;
-
-                case EnemyClass.Cape:
-                    if (info.IsName("KnightDash") && info.normalizedTime >= 1f)
-                    {
-                        isAttacking = false;
-                    }
-                    break;
-            }
-        }
-        else 
+        if (info.IsName("KnightAttackSword") && info.normalizedTime >= 1f)
         {
-            isAttacking = false; 
+            isAttacking = false;
+            animator.SetBool("isSlashing", isAttacking);
         }
+
+        /*
+        switch (enemyClass)
+        {
+            case EnemyClass.Sword:
+                if (info.IsName("KnightAttackSword") && info.normalizedTime >= 1f)
+                {
+                    isAttacking = false;
+                    animator.SetBool("isSlashing", isAttacking);
+                }
+                break;
+                            
+            case EnemyClass.Hammer:
+                animator.SetBool("isHammering", isAttacking);
+                break;
+
+            case EnemyClass.Cape:
+                if (info.IsName("KnightDash") && info.normalizedTime >= 1f)
+                {
+                    isAttacking = false;
+                    animator.SetBool("isDashing", isAttacking);
+                }
+                break;
+        }*/
     }
 
     private void Attack()
@@ -306,27 +382,36 @@ public class EnemyController : MonoBehaviour, IMovable
         isAttacking = true;
         canAttack = false;
 
+        animator.SetBool("isSlashing", isAttacking);
+        StartCoroutine(SlashAttack()); // A MODIFIER
+
+        /*
         switch (enemyClass)
         {
             case EnemyClass.Sword:
+                animator.SetBool("isSlashing", isAttacking);
                 StartCoroutine(SlashAttack());
                 break;
                             
             case EnemyClass.Hammer:
-                // Animation d'attaque
+                animator.SetBool("isHammering", isAttacking);
                 break;
 
             case EnemyClass.Cape:
-                // Animation d'attaque
+                animator.SetBool("isDashing", isAttacking);
                 break;
-        }
+        }*/
     }
 
     private IEnumerator SlashAttack()
     {
-        yield return new WaitForSeconds(0.7f); // Attendre la fin de l'animation d'attaque
+        yield return new WaitForSeconds(0.4f);
+        EnableTrail();
+        yield return new WaitForSeconds(0.3f); 
 
-        Vector2 origin = new Vector2(transform.position.x + transform.localScale.x * 0.5f, transform.position.y);
+        if (isDead) yield break;
+
+        Vector2 origin = new Vector2(transform.position.x + transform.localScale.x, transform.position.y);
         Collider2D[] hits = Physics2D.OverlapCircleAll(origin, attackRadius);
 
         foreach (var hit in hits)
@@ -337,15 +422,19 @@ public class EnemyController : MonoBehaviour, IMovable
             {
                 if (hit.gameObject == target)
                 {
+                    float direction = Mathf.Sign(hit.transform.position.x - transform.position.x);
                     // Appliquer des dégâts à la cible
                     hit.GetComponent<Health>().TakeDamage(damage);
-                    hit.GetComponent<KnockBack>().TakeKnockBack(transform.localScale.x * damage * 8, knockBackDuration);
+                    hit.GetComponent<KnockBack>().TakeKnockBack(direction * damage, knockBackDuration);
                 }
             }
 
             // Attendre le cooldown avant de pouvoir attaquer à nouveau
             StartCoroutine(WaitForAttackCooldown());            
         }
+
+        yield return new WaitForSeconds(0.3f);
+        DisableTrail();
     }
 
     private void Jump()
@@ -378,8 +467,15 @@ public class EnemyController : MonoBehaviour, IMovable
     // Méthode pour détecter les cibles
     private void DetectTargets()
     {
-        isTargetInSight = false;
         currentTarget = null;
+
+        // Vérifier si la liste des cibles est initialisée
+        if (targets == null || targets.Length == 0)
+        {
+            Debug.LogWarning("Targets list is not initialized or empty.");
+            isTargetInSight = false;
+            return;
+        }
 
         Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
         Vector2 origin = (Vector2)transform.position;
@@ -390,7 +486,7 @@ public class EnemyController : MonoBehaviour, IMovable
         if (backEyes)
         {
             // Détection rectangulaire autour de l'ennemi (vision à 360°)
-            size = new Vector2(currentDetectionRadius * 2f, currentDetectionRadius * 0.8f);
+            size = new Vector2(currentDetectionRadius * 2f, currentDetectionRadius);
             boxCenter = origin;
         }
         else
@@ -417,6 +513,25 @@ public class EnemyController : MonoBehaviour, IMovable
                 }
             }
         }
+
+        isTargetInSight = false;
+    }
+
+    public void Die()
+    {
+        DisableTrail();
+        isDead = true;
+    }
+
+    // Méthode pour afficher les effets de swing de l'épée
+    public void EnableTrail()
+    {
+        trailRenderer.emitting = true;
+    }
+
+    public void DisableTrail()
+    {
+        trailRenderer.emitting = false;
     }
 
 
@@ -431,14 +546,17 @@ public class EnemyController : MonoBehaviour, IMovable
             case EnemyClass.Sword:
                 swordBody.SetActive(true);
                 animator = swordBody.GetComponent<Animator>();
+                trailRenderer = swordBody.GetComponentInChildren<TrailRenderer>();
                 break;
             case EnemyClass.Cape:
                 capeBody.SetActive(true);
                 animator = capeBody.GetComponent<Animator>();
+                trailRenderer = capeBody.GetComponentInChildren<TrailRenderer>();
                 break;
             case EnemyClass.Hammer:
                 hammerBody.SetActive(true);
                 animator = hammerBody.GetComponent<Animator>();
+                trailRenderer = hammerBody.GetComponentInChildren<TrailRenderer>();
                 break;
         }
     }

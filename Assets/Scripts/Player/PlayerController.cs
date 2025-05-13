@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement; // Assurez-vous que ce namespace est inclus
 
 public class PlayerController : MonoBehaviour, IMovable
 {
@@ -17,6 +18,7 @@ public class PlayerController : MonoBehaviour, IMovable
     [SerializeField] private float attackRange = 1f;
     [SerializeField] private float attackDamage = 1f;
     [SerializeField] private float attackCooldown = 1f;
+    [SerializeField] private float knockBackDuration = 0.2f;
     private bool isAttacking = false;
     private bool isAttackCooldownOver = true;
 
@@ -32,7 +34,9 @@ public class PlayerController : MonoBehaviour, IMovable
     
     [Header("Sol")]
     [SerializeField] private LayerMask groundLayer;
-    public bool isGrounded;
+    public bool isGrounded { get; private set; }
+
+    private bool isDead = false;
 
     [Header("Références")]
     private Rigidbody2D rb;
@@ -44,18 +48,40 @@ public class PlayerController : MonoBehaviour, IMovable
     public void SetStunned(bool state)
     {
         isStunned = state;
+        animator.SetBool("isStunned", isStunned);
     }
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+
+        // S'abonner à l'événement de chargement de scène
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDestroy()
+    {
+        // Se désabonner de l'événement pour éviter les erreurs
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Arrêter toutes les coroutines en cours lors du chargement d'une nouvelle scène
+        StopAllCoroutines();
     }
 
     void Start()
     {
         isMovingEnabled = false; 
         isAttackCooldownOver = true;
+
+        animator.SetBool("isAttacking", false);
+
+        /*
+        StopCoroutine("SimulateHorizontalMovementCoroutine");
+        StopCoroutine("SimulateJumpCoroutine");*/
     }
 
     void Update()
@@ -66,13 +92,15 @@ public class PlayerController : MonoBehaviour, IMovable
             // Vérifie si le joueur a appuyé sur le bouton d'attaque
             if (Input.GetButtonDown("Attack") && isAttackCooldownOver)
             {
-                if (isAttacking)
+                if (isAttacking) 
                 {
-                    // Si le joueur attaque déjà, on arrête l'attaque
-                    animator.SetTrigger("RestartAttack");
+                    isAttacking = false;
+                    animator.SetBool("isAttacking", false);
+                    return;
                 }
                 isAttacking = true;
-                StartCoroutine(WaitForAttackCooldown());
+                animator.SetBool("isAttacking", isAttacking);
+                StartCoroutine(AttackCoroutine());
                 // DisableMovement();
             }
 
@@ -88,17 +116,17 @@ public class PlayerController : MonoBehaviour, IMovable
         }
 
         animator.SetFloat("xVelocity", Mathf.Abs(rb.velocity.x));
-        animator.SetFloat("yVelocity", rb.velocity.y);
         animator.SetBool("isGrounded", isGrounded);
-        animator.SetBool("isAttacking", isAttacking);
-        animator.SetBool("isStunned", isStunned);
     }
 
     void FixedUpdate()
     {
-        // Gérer les mouvements du joueur et l'attaque
-        HandleAttack();
-        HandleMovements();
+        // Gérer les mouvements du joueur
+        if (!isDead) HandleMovements();
+        else
+        {
+            if (isGrounded) rb.bodyType = RigidbodyType2D.Static;
+        }
 
         // Gérer le coyote time
         if (isGrounded) coyoteTimeCounter = coyoteTime;
@@ -170,29 +198,37 @@ public class PlayerController : MonoBehaviour, IMovable
         }
     }
 
-    // Méthode privée pour gérer l'attaque
-    private void HandleAttack()
-    {
-        if (!isStunned)
-        {
-            AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(0);
-            if (info.IsName("PlayerAttack") && info.normalizedTime >= 1f)
-            {
-                isAttacking = false;
-            }
-        }
-        else 
-        {
-            isAttacking = false; 
-        }
-    }
-
-    // Coroutine pour gérer le cooldown
-    private IEnumerator WaitForAttackCooldown()
+    // Coroutine pour gérer l'attaque
+    private IEnumerator AttackCoroutine()
     {
         isAttackCooldownOver = false;
+
+        yield return new WaitForSeconds(0.2f); // Attendre la fin de l'animation d'attaque
+
+        Vector2 origin = new Vector2(transform.position.x + transform.localScale.x * 0.5f, transform.position.y);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(origin, attackRange);
+
+        foreach (var hit in hits)
+        {
+            if (hit == null) continue;
+
+            if (hit.gameObject.tag == "enemy")
+            {
+                // Appliquer des dégâts à la cible
+                hit.GetComponent<Health>()?.TakeDamage(attackDamage);
+                hit.GetComponent<KnockBack>()?.TakeKnockBack(transform.localScale.x * attackDamage, knockBackDuration);
+            }
+        }
+
         yield return new WaitForSeconds(attackCooldown);
+
         isAttackCooldownOver = true;
+    }
+
+    public void EndAttack()
+    {
+        isAttacking = false;
+        animator.SetBool("isAttacking", false);
     }
 
 
@@ -233,12 +269,18 @@ public class PlayerController : MonoBehaviour, IMovable
         // Une fois au sol (ou si not untilFloorTouched), applique une fois le mouvement
         rb.velocity = new Vector2(xMovement, rb.velocity.y);
 
+
         // Si untilFloorTouched est activé, continue le mouvement jusqu'à toucher le sol
         while ((untilFloorTouched && !isGrounded) || forever)
         {
             rb.velocity = new Vector2(xMovement, rb.velocity.y);
             yield return null; // Attend une frame avant de continuer
         }
+    }
+
+    public void Die()
+    {
+        isDead = true;
     }
 
     

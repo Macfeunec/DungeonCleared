@@ -48,6 +48,8 @@ public class SceneFader : MonoBehaviour
     // Prend une chaîne de caractères pour le nom de la scène en paramètre
     private IEnumerator FadeAndSwitchScenes(string sceneName)
     {
+        PlayerManager.Instance.SaveGame(); // Sauvegarde l'état du jeu avant de changer de scène
+
         isFading = true;
 
         yield return StartCoroutine(FadeOut(sceneName));    // Appelle la coroutine FadeOut qui gère le fondu à la sortie de la scène et la transition de scène

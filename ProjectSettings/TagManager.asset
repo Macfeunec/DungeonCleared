@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Gateway
   - Ground
+  - enemy
+  - cameraBounds
   layers:
   - Default
   - TransparentFX

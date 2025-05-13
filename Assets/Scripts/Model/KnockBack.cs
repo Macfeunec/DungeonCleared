@@ -27,7 +27,7 @@ public class KnockBack : MonoBehaviour
             StartCoroutine(RecoverFromKnockback(movable, knockBackDuration));
         }
         // Appliquer la force de recul au Rigidbody
-        rb.velocity = new Vector2(knockBackForce / knockBackResistance, knockBackForce*2 / knockBackResistance);
+        rb.velocity = new Vector2(knockBackForce / knockBackResistance, Mathf.Abs(knockBackForce)*2 / knockBackResistance);
     }
 
     IEnumerator RecoverFromKnockback(IMovable movable, float knockbackDuration)
