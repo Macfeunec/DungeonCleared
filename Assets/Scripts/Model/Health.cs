@@ -6,6 +6,13 @@ public class Health : MonoBehaviour
     [SerializeField] private float maxHealth;
     private float currentHealth;
 
+    // Méthode d'initialisation
+    // Définit la santé actuelle à la santé maximale
+    void Start()
+    {
+        currentHealth = maxHealth;
+    }
+
     // Méthode pour recevoir des dégâts
     // Réduit la santé actuelle en fonction des dégâts reçus
     public void TakeDamage(float damage)

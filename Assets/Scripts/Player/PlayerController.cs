@@ -61,7 +61,7 @@ public class PlayerController : MonoBehaviour, IMovable
     void Update()
     {
         // Lecture des inputs
-        if (isMovingEnabled && !isStunned)
+        if (isMovingEnabled && !isStunned && !isStopped)
         {
             // Vérifie si le joueur a appuyé sur le bouton d'attaque
             if (Input.GetButtonDown("Attack") && isAttackCooldownOver)
@@ -121,7 +121,7 @@ public class PlayerController : MonoBehaviour, IMovable
     private void HandleMovements()
     {
         // Appliquer les mouvements au Rigidbody
-        if (isMovingEnabled && !isStunned && !isStopped)
+        if (!isStunned && !isStopped)
         {
             float xMovement = rb.velocity.x; // Conserver la vitesse horizontale actuelle
             float yMovement = rb.velocity.y; // Conserver la vitesse verticale actuelle
@@ -159,7 +159,7 @@ public class PlayerController : MonoBehaviour, IMovable
             rb.velocity = new Vector2(xMovement, yMovement);
             if (Mathf.Abs(xMovement) > 0.1f) transform.localScale = new Vector3(Mathf.Sign(xMovement), 1, 1); // Retourner le sprite selon la direction
         }
-        else if (isStunned || !isMovingEnabled)
+        else if (isStunned)
         {
             // Si le joueur est étourdi, on ne modifie pas la vélocité horizontale
             rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y);

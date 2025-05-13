@@ -392,7 +392,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &946806862613368444
 Transform:
   m_ObjectHideFlags: 0
@@ -446,8 +446,8 @@ MonoBehaviour:
     m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
-  m_PointLightInnerRadius: 1.1
-  m_PointLightOuterRadius: 1.1
+  m_PointLightInnerRadius: 2.47
+  m_PointLightOuterRadius: 2.47
   m_ShapeLightParametricSides: 5
   m_ShapeLightParametricAngleOffset: 0
   m_ShapeLightParametricRadius: 1
@@ -824,6 +824,7 @@ MonoBehaviour:
   deceleration: 30
   maxSpeed: 9
   isMovingEnabled: 0
+  isStopped: 0
   attackRange: 1
   attackDamage: 10
   attackCooldown: 0.3

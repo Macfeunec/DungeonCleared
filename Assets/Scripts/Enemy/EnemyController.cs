@@ -2,10 +2,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum EnemyClass
+{
+    Sword,
+    Hammer,
+    Cape
+}
+
 public class EnemyController : MonoBehaviour, IMovable
 {
     [Header("Paramètres")]
-    [SerializeField] private bool isMeleeEnemy;
+    [SerializeField] private EnemyClass enemyClass = EnemyClass.Sword;
+    [SerializeField] private GameObject swordBody;
+    [SerializeField] private GameObject capeBody;
+    [SerializeField] private GameObject hammerBody;
+    [SerializeField] private bool isIdleEnemy;
+    [SerializeField] private bool isJumpingEnemy;
+    [SerializeField] private bool isRunningEnemy;
+    [SerializeField] private bool isIdle = false; // RETIRER SERIALIZEFIELD APRES TEST
+    private Animator animator;
 
     [Header("Cibles")]
     [SerializeField] private GameObject[] targets;
@@ -15,8 +30,9 @@ public class EnemyController : MonoBehaviour, IMovable
     [SerializeField] private bool backEyes; // Si l'ennemi peut regarder derrière lui
     [SerializeField] private float detectionCooldown = 0.5f;
     private float currentDetectionRadius;
-    private bool isTargetInSight = false;
+    [SerializeField] private bool isTargetInSight = false; // RETIRER SERIALIZEFIELD APRES TEST
     private Transform currentTarget;
+    [SerializeField] private bool isPatroling = false; // RETIRER SERIALIZEFIELD APRES TEST
 
     [Header("Mouvement")]
     [SerializeField] private float patrolSpeed;
@@ -32,7 +48,8 @@ public class EnemyController : MonoBehaviour, IMovable
     [SerializeField] private float damage;
     [SerializeField] private float attackCooldown = 2f;
     [SerializeField] private float knockBackDuration = 0.5f;
-    private bool isAttacking = false;
+    [SerializeField] private bool isAttacking = false;
+    private bool canAttack = true;
 
     private bool isStunned = false;
     public bool IsStunned => isStunned;
@@ -41,10 +58,17 @@ public class EnemyController : MonoBehaviour, IMovable
     {
         isStunned = state;
     }
+
+    void Awake()
+    {
+        SetClassVisual();
+    }
   
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponentInChildren<Animator>();
+
         collisionLayer = LayerMask.GetMask("Collision");
         StartCoroutine(DetectionRoutine());
     }
@@ -58,10 +82,41 @@ public class EnemyController : MonoBehaviour, IMovable
         }
     }
 
+    void Update()
+    {
+        animator.SetBool("isGrounded", isGrounded);
+        if (isRunningEnemy)
+        {
+            animator.SetBool("isPatroling", isPatroling);
+            animator.SetBool("isChasing", isTargetInSight);
+        }
+        else
+        {
+            animator.SetBool("isPatroling", isPatroling || isTargetInSight);
+        }
+        animator.SetBool("isIdle", isIdle);
+        switch (enemyClass)
+        {
+            case EnemyClass.Sword:
+                animator.SetBool("isSlashing", isAttacking);
+                break;
+            
+            case EnemyClass.Hammer:
+                animator.SetBool("isHammering", isAttacking);
+                break;
+
+            case EnemyClass.Cape:
+                animator.SetBool("isDashing", isAttacking);
+                break;
+        }
+    }
+
     void FixedUpdate()
     {
         // Gérer le mouvement de l'ennemi
         if (!isStunned && !isAttacking) GroundMovement();
+
+        HandleAttack();
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -96,10 +151,25 @@ public class EnemyController : MonoBehaviour, IMovable
         // Vérifier si la cible est dans le champ de vision
         if (!isTargetInSight) 
         {
-            // Si la cible n'est pas dans le champ de vision, l'ennemi patrouille
-            currentDetectionRadius = detectionRadius;
             backEyes = false;
-            GroundPatrol();
+            currentDetectionRadius = detectionRadius;
+
+            if (isIdleEnemy)
+            {
+                // Si l'ennemi est inactif, il ne fait rien
+                rb.velocity = new Vector2(0f, rb.velocity.y);
+
+                isIdle = true;
+            }
+            else
+            {
+                // Si la cible n'est pas dans le champ de vision, l'ennemi patrouille
+                GroundPatrol();
+
+                isPatroling = true;
+                isIdle = false;
+            }
+            
         }
         else
         {   
@@ -107,6 +177,9 @@ public class EnemyController : MonoBehaviour, IMovable
             currentDetectionRadius = triggerdDetectionRadius;
             backEyes = true;
             ChaseTarget();
+
+            isPatroling = false;
+            isIdle = false;
         }
     }
 
@@ -121,7 +194,8 @@ public class EnemyController : MonoBehaviour, IMovable
             transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, transform.localScale.z);
         }
         // Déplacer l'ennemi
-        rb.velocity = new Vector2(transform.localScale.x * patrolSpeed, rb.velocity.y);      
+        float speedMultiplier = isRunningEnemy ? 1f : 0.5f;
+        rb.velocity = new Vector2(transform.localScale.x * patrolSpeed * speedMultiplier, rb.velocity.y);      
     }
 
     // Méthode pour détecter les obstacles
@@ -161,18 +235,21 @@ public class EnemyController : MonoBehaviour, IMovable
         if (currentTarget == null) return;
 
         float distance = Vector2.Distance(transform.position, currentTarget.position);
+        float xDiff = currentTarget.position.x - transform.position.x;
+        float direction = Mathf.Sign(xDiff);
+        
         if (distance < attackRadius)
         {
             rb.velocity = new Vector2(0f, rb.velocity.y);
-            HandleAttack();
+            transform.localScale = new Vector3(direction, transform.localScale.y, transform.localScale.z);
+            Attack();
             return;
         }
 
-        float moveSpeed = chaseSpeed;
-        float xDiff = currentTarget.position.x - transform.position.x;
-        float direction = Mathf.Sign(xDiff);
 
-        if (Mathf.Abs(xDiff) > 0.2f)
+        float moveSpeed = isRunningEnemy ? chaseSpeed : chaseSpeed * 0.5f;
+
+        if (Mathf.Abs(xDiff) > 1f)
         {
             transform.localScale = new Vector3(direction, transform.localScale.y, transform.localScale.z);
             rb.velocity = new Vector2(direction * moveSpeed, rb.velocity.y);
@@ -183,42 +260,91 @@ public class EnemyController : MonoBehaviour, IMovable
         bool isObstacleDetected = obstacleDetected();
         if ((isGrounded && heightDiff > 2f) || (isGrounded && isObstacleDetected))
         {
-            Jump();
+            if (isJumpingEnemy) Jump();
         }
     }
 
-    // Méthode pour gérer l'attaque de l'ennemi
-    // L'ennemi attaque la cible si elle est à portée
+
     private void HandleAttack()
     {
-        // Attaque la cible et attends un cooldown avant de pouvoir attaquer à nouveau
-        if (isMeleeEnemy)
+        if (!isStunned)
         {
-            if (isAttacking) return;
-            isAttacking = true;
+            AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(0);
 
-            // Animation d'attaque
-
-            // Attaque de mêlée
-            Collider2D[] hits = Physics2D.OverlapCircleAll(currentTarget.position, attackRadius);
-            foreach (var hit in hits)
+            switch (enemyClass)
             {
-                if (hit == null) continue;
-
-                foreach (var target in targets)
-                {
-                    if (hit.gameObject == target)
+                case EnemyClass.Sword:
+                    if (info.IsName("KnightAttackSword") && info.normalizedTime >= 1f)
                     {
-                        // Appliquer des dégâts à la cible
-                        hit.GetComponent<Health>().TakeDamage(damage);
-                        hit.GetComponent<KnockBack>().TakeKnockBack(transform.localScale.x * damage * 8, knockBackDuration);
+                        isAttacking = false;
                     }
-                }
+                    break;
+                                
+                case EnemyClass.Hammer:
+                    // Animation d'attaque
+                    break;
 
-                // Attendre le cooldown avant de pouvoir attaquer à nouveau
-                StartCoroutine(WaitForAttackCooldown());
-                return;
+                case EnemyClass.Cape:
+                    if (info.IsName("KnightDash") && info.normalizedTime >= 1f)
+                    {
+                        isAttacking = false;
+                    }
+                    break;
             }
+        }
+        else 
+        {
+            isAttacking = false; 
+        }
+    }
+
+    private void Attack()
+    {
+        // Attaque la cible et attends un cooldown avant de pouvoir attaquer à nouveau
+        if (!canAttack) return;
+
+        isAttacking = true;
+        canAttack = false;
+
+        switch (enemyClass)
+        {
+            case EnemyClass.Sword:
+                StartCoroutine(SlashAttack());
+                break;
+                            
+            case EnemyClass.Hammer:
+                // Animation d'attaque
+                break;
+
+            case EnemyClass.Cape:
+                // Animation d'attaque
+                break;
+        }
+    }
+
+    private IEnumerator SlashAttack()
+    {
+        yield return new WaitForSeconds(0.7f); // Attendre la fin de l'animation d'attaque
+
+        Vector2 origin = new Vector2(transform.position.x + transform.localScale.x * 0.5f, transform.position.y);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(origin, attackRadius);
+
+        foreach (var hit in hits)
+        {
+            if (hit == null) continue;
+
+            foreach (var target in targets)
+            {
+                if (hit.gameObject == target)
+                {
+                    // Appliquer des dégâts à la cible
+                    hit.GetComponent<Health>().TakeDamage(damage);
+                    hit.GetComponent<KnockBack>().TakeKnockBack(transform.localScale.x * damage * 8, knockBackDuration);
+                }
+            }
+
+            // Attendre le cooldown avant de pouvoir attaquer à nouveau
+            StartCoroutine(WaitForAttackCooldown());            
         }
     }
 
@@ -240,7 +366,7 @@ public class EnemyController : MonoBehaviour, IMovable
     private IEnumerator WaitForAttackCooldown()
     {
         yield return new WaitForSeconds(attackCooldown);
-        isAttacking = false;
+        canAttack = true;
     }
 
     private IEnumerator WaitForJumpCooldown()
@@ -250,25 +376,32 @@ public class EnemyController : MonoBehaviour, IMovable
     }
 
     // Méthode pour détecter les cibles
-    // Cette méthode utilise un cercle de détection pour trouver les cibles
     private void DetectTargets()
     {
         isTargetInSight = false;
         currentTarget = null;
-        Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left; // direction vers laquelle l'ennemi regarde
-        Vector2 origin = transform.position;
-        Collider2D[] hits;
+
+        Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
+        Vector2 origin = (Vector2)transform.position;
+
+        Vector2 size;
+        Vector2 boxCenter;
 
         if (backEyes)
         {
-            // Vision circulaire
-            hits = Physics2D.OverlapCircleAll(origin, currentDetectionRadius);
+            // Détection rectangulaire autour de l'ennemi (vision à 360°)
+            size = new Vector2(currentDetectionRadius * 2f, currentDetectionRadius * 0.8f);
+            boxCenter = origin;
         }
         else
         {
-            // Vision frontale
-            hits = Physics2D.OverlapCircleAll(origin + direction * currentDetectionRadius * 0.5f, currentDetectionRadius * 0.5f);
+            // Détection rectangulaire devant l'ennemi
+            size = new Vector2(currentDetectionRadius, currentDetectionRadius * 0.8f);
+            boxCenter = origin + direction * (currentDetectionRadius / 2f);
         }
+
+        // Utiliser OverlapBoxAll pour détecter les cibles dans un rectangle
+        Collider2D[] hits = Physics2D.OverlapBoxAll(boxCenter, size, 0f);
 
         foreach (var hit in hits)
         {
@@ -280,30 +413,61 @@ public class EnemyController : MonoBehaviour, IMovable
                 {
                     isTargetInSight = true;
                     currentTarget = target.transform;
-                    return; // on s'arrête dès qu'une cible est trouvée
+                    return;
                 }
             }
         }
     }
 
-    // Méthode pour afficher les Gizmos dans l'éditeur
-    // Cela permet de visualiser la portée de détection de l'ennemi
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.red;
-        Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
 
-        if (backEyes)
+    private void SetClassVisual()
+    {
+        swordBody.SetActive(false);
+        capeBody.SetActive(false);
+        hammerBody.SetActive(false);
+
+        switch (enemyClass)
         {
-            Gizmos.DrawWireSphere(transform.position, detectionRadius);
-        }
-        else
-        {
-            Vector3 center = transform.position + (Vector3)(direction * detectionRadius * 0.5f);
-            Gizmos.DrawWireSphere(center, detectionRadius * 0.5f);
+            case EnemyClass.Sword:
+                swordBody.SetActive(true);
+                animator = swordBody.GetComponent<Animator>();
+                break;
+            case EnemyClass.Cape:
+                capeBody.SetActive(true);
+                animator = capeBody.GetComponent<Animator>();
+                break;
+            case EnemyClass.Hammer:
+                hammerBody.SetActive(true);
+                animator = hammerBody.GetComponent<Animator>();
+                break;
         }
     }
 
 
+    // Méthode pour afficher les Gizmos dans l'éditeur
+    // Cela permet de visualiser la portée de détection de l'ennemi
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.green;
+
+        Vector2 direction = transform.localScale.x > 0 ? Vector2.right : Vector2.left;
+        Vector2 origin = transform.position;
+
+        Vector2 size;
+        Vector2 center;
+
+        if (backEyes)
+        {
+            size = new Vector2(currentDetectionRadius * 2f, currentDetectionRadius * 0.8f);
+            center = origin;
+        }
+        else
+        {
+            size = new Vector2(currentDetectionRadius, currentDetectionRadius * 0.8f);
+            center = origin + direction * (currentDetectionRadius / 2f);
+        }
+
+        Gizmos.DrawWireCube(center, size);
+    }
 
 }
