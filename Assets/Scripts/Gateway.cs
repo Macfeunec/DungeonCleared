@@ -8,6 +8,7 @@ public class Gateway : MonoBehaviour
     [SerializeField] private string targetSceneName;
     [SerializeField] private int spawnID; // ID de spawn pour la scène cible
     [SerializeField] private GatewayPosition position;
+    [SerializeField] private bool isEndGateway;
 
     private void OnTriggerEnter2D(Collider2D other)
     {
@@ -25,11 +26,17 @@ public class Gateway : MonoBehaviour
 
                 if (playerController != null) {
                     playerController.DisableMovement();
+                    other.GetComponent<Rigidbody2D>().velocity = Vector2.zero; // Stop the player movement
                     playerController.SimulateHorizontalMovement(direction, 1f, false, true); 
                 }
             }
             SceneTransitionManager.Instance.SetSpawnID(spawnID); // Enregistre l'ID de spawn
+            PlayerManager.Instance.SavePlayerHealth();
             SceneFader.Instance.FadeToScene(targetSceneName);
+        }
+        else if (isEndGateway)
+        {
+            SceneFader.Instance.FadeToMenuAndDestroy();
         }
     }
 }

@@ -1,4 +1,7 @@
+using Unity.VisualScripting.Antlr3.Runtime;
+using UnityEditor.SearchService;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Health : MonoBehaviour
 {
@@ -6,6 +9,8 @@ public class Health : MonoBehaviour
     [Header("Santé")]
     [SerializeField] private float maxHealth;
     [SerializeField] private float currentHealth;
+    [SerializeField] private bool canRegenerate;
+    [SerializeField] private float regenerationRate;
     private bool isDead = false;
 
     [Header("Personnage")]
@@ -46,6 +51,10 @@ public class Health : MonoBehaviour
             }
             
         }
+        if (canRegenerate && !isDead)
+        {
+            RegenerateHealth();
+        }
     }
 
     // Méthode pour recevoir des dégâts
@@ -66,6 +75,15 @@ public class Health : MonoBehaviour
     public void Heal(float amount)
     {
         currentHealth += amount;
+    }
+
+    // Méthode pour régénérer la santé
+    private void RegenerateHealth()
+    {
+        if (currentHealth < maxHealth)
+        {
+            currentHealth += regenerationRate * Time.deltaTime;
+        }
     }
 
     private void Die()
@@ -107,5 +125,21 @@ public class Health : MonoBehaviour
     public void SetCurrentHealth(float health)
     {
         currentHealth = health;
+    }
+
+    // Méthode pour récupérer la santé maximale
+    public float GetMaxHealth()
+    {
+        return maxHealth;
+    }
+
+    public void SetMaxHealth(float health)
+    {
+        maxHealth = health;
+    }
+
+    public void SetIsDead(bool dead)
+    {
+        isDead = dead;
     }
 }

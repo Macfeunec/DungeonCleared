@@ -13,6 +13,10 @@ public class PlayerSpawnPoint : MonoBehaviour
         if (SceneTransitionManager.Instance != null && SceneTransitionManager.Instance.GetSpawnID() == spawnID)
         {
             GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null  && spawnDirection != Direction.None)
+            {
+                player.transform.localScale = new Vector3(spawnDirection == Direction.Right ? 1 : -1, 1, 1); // Change l'échelle du joueur pour le faire face à la direction de spawn
+            }
             if (player != null)
             {
                 player.transform.position = transform.position; // Positionne le joueur au point de spawn

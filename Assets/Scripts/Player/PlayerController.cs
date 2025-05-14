@@ -19,8 +19,13 @@ public class PlayerController : MonoBehaviour, IMovable
     [SerializeField] private float attackDamage = 1f;
     [SerializeField] private float attackCooldown = 1f;
     [SerializeField] private float knockBackDuration = 0.2f;
+    [SerializeField] private float maxStamina = 1000f;
+    private float stamina = 1000f;
+    [SerializeField] private float staminaCost = 300f;
+    [SerializeField] private float staminaRegen = 200f;
     private bool isAttacking = false;
     private bool isAttackCooldownOver = true;
+    private TrailRenderer trailRenderer;
 
     [Header("Saut")]
     [SerializeField] private float jumpForce = 21f;
@@ -55,6 +60,8 @@ public class PlayerController : MonoBehaviour, IMovable
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        trailRenderer = GetComponentInChildren<TrailRenderer>();
+        if (trailRenderer != null) trailRenderer.emitting = false; // Désactiver le TrailRenderer au départ
 
         // S'abonner à l'événement de chargement de scène
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -68,6 +75,11 @@ public class PlayerController : MonoBehaviour, IMovable
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        if (SceneManager.GetActiveScene().name == "Menu")
+        {
+            // Réinitialiser le joueur si la scène est le menu principal
+            DisableMovement();
+        }
         // Arrêter toutes les coroutines en cours lors du chargement d'une nouvelle scène
         StopAllCoroutines();
     }
@@ -86,11 +98,13 @@ public class PlayerController : MonoBehaviour, IMovable
 
     void Update()
     {
+        HandleStamina();
+
         // Lecture des inputs
         if (isMovingEnabled && !isStunned && !isStopped)
         {
             // Vérifie si le joueur a appuyé sur le bouton d'attaque
-            if (Input.GetButtonDown("Attack") && isAttackCooldownOver)
+            if (Input.GetButtonDown("Attack") && isAttackCooldownOver && stamina > 0f)
             {
                 if (isAttacking) 
                 {
@@ -117,6 +131,8 @@ public class PlayerController : MonoBehaviour, IMovable
 
         animator.SetFloat("xVelocity", Mathf.Abs(rb.velocity.x));
         animator.SetBool("isGrounded", isGrounded);
+
+        if (!isAttacking && trailRenderer != null && trailRenderer.emitting == true) trailRenderer.emitting = false;
     }
 
     void FixedUpdate()
@@ -202,8 +218,14 @@ public class PlayerController : MonoBehaviour, IMovable
     private IEnumerator AttackCoroutine()
     {
         isAttackCooldownOver = false;
+        yield return new WaitForSeconds(0.05f);
+        trailRenderer.emitting = true; // Activer le TrailRenderer
 
-        yield return new WaitForSeconds(0.2f); // Attendre la fin de l'animation d'attaque
+        if (stamina > 0) stamina -= staminaCost;
+
+        yield return new WaitForSeconds(0.15f); // Attendre la fin de l'animation d'attaque
+
+        trailRenderer.emitting = false; // Désactiver le TrailRenderer
 
         Vector2 origin = new Vector2(transform.position.x + transform.localScale.x * 0.5f, transform.position.y);
         Collider2D[] hits = Physics2D.OverlapCircleAll(origin, attackRange);
@@ -229,6 +251,18 @@ public class PlayerController : MonoBehaviour, IMovable
     {
         isAttacking = false;
         animator.SetBool("isAttacking", false);
+    }
+
+    private void HandleStamina()
+    {
+        if (stamina < maxStamina)
+        {
+            stamina += Time.deltaTime * staminaRegen; // Régénérer la stamina
+        }
+        else
+        {
+            stamina = maxStamina; // Limiter la stamina à 100
+        }
     }
 
 
@@ -283,6 +317,23 @@ public class PlayerController : MonoBehaviour, IMovable
         isDead = true;
     }
 
+    public void Respawn()
+    {
+        SceneTransitionManager.Instance.SetSpawnID(0);
+        SceneFader.Instance.RespawnPlayer();    
+    }
+
+    public void ResetPlayer()
+    {
+        isDead = false;
+        rb.bodyType = RigidbodyType2D.Dynamic;
+        rb.velocity = Vector2.zero; // Réinitialiser la vélocité
+        rb.gravityScale = 10f; // Réinitialiser la gravité
+        EnableMovement(); // Réactiver le mouvement
+        animator.SetBool("isDying", false); // Réinitialiser l'animation de mort
+        GetComponent<Health>().SetIsDead(false); // Réinitialiser la santé
+    }
+
     
     void OnTriggerEnter2D(Collider2D other)
     {
@@ -305,5 +356,15 @@ public class PlayerController : MonoBehaviour, IMovable
     private bool IsInLayerMask(GameObject obj, LayerMask mask)
     {
         return (mask.value & (1 << obj.layer)) != 0;
+    }
+
+    public float GetStamina()
+    {
+        return stamina;
+    }
+
+    public float GetMaxStamina()
+    {
+        return maxStamina;
     }
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 public class SceneTransitionManager : MonoBehaviour
 {
     public static SceneTransitionManager Instance;
-    private int spawnID = 0;
+    [SerializeField] private int spawnID = 0;
 
     void Awake()
     {

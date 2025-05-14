@@ -17,7 +17,6 @@ public class VirtualCameraManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); 
             SceneManager.sceneLoaded += OnSceneLoaded; // S'abonner à l'événement de chargement de scène
         }
         else

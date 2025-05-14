@@ -1,13 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerManager : MonoBehaviour
 {
     public static PlayerManager Instance;
     private GameObject player;
 
+    public float playerMaxHealth;
     public float playerHealth;
+    public float playerMaxStamina;
+    public float playerStamina;
     public float playerPositionX;
     public float playerPositionY;
     public int playerDirection;
@@ -16,12 +20,10 @@ public class PlayerManager : MonoBehaviour
 
     void Awake()
     {
-        player = this.gameObject;
-
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); 
+            DontDestroyOnLoad(gameObject); // Ne pas détruire cet objet lors du chargement d'une nouvelle scène
         }
         else
         {
@@ -29,40 +31,56 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    void Start()
-    {
-        StartCoroutine(AutomaticSave());
+    public void SavePlayerHealth()
+    {   
+        if (player == null) player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
+        {
+            Debug.LogError("Player not found.");
+            return;
+        }
+        playerHealth = player.GetComponent<Health>().GetCurrentHealth();
+        playerMaxHealth = player.GetComponent<Health>().GetMaxHealth();
+        playerMaxStamina = player.GetComponent<PlayerController>().GetMaxStamina();
+        playerStamina = player.GetComponent<PlayerController>().GetStamina();
     }
 
-    // Coroutine pour sauvegarder automatiquement le jeu
-    private IEnumerator AutomaticSave()
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        while (true)
+        player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
         {
-            yield return new WaitForSeconds(60f); // Sauvegarde toutes les 60 secondes
-            if (player.GetComponent<PlayerController>().isGrounded) SaveGame();
+            Debug.LogError("Player not found in the scene.");
+            return;
         }
     }
 
-    // Méthode pour sauvegarder le jeu
-    public void SaveGame()
+    void Start()
     {
-        if (player == null) return;
-
-        playerHealth = player.GetComponent<Health>().GetCurrentHealth();
-        playerPositionX = player.transform.position.x;
-        playerPositionY = player.transform.position.y;
-        playerDirection = player.transform.localScale.x > 0 ? 1 : -1;
-        playerSpawnID = SceneTransitionManager.Instance.GetSpawnID();
-        currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-
-        // Sauvegarder
-        PlayerPrefs.SetFloat("PlayerHealth", playerHealth);
-        PlayerPrefs.SetFloat("PlayerPositionX", playerPositionX);
-        PlayerPrefs.SetFloat("PlayerPositionY", playerPositionY);
-        PlayerPrefs.SetInt("PlayerDirection", playerDirection);
-        PlayerPrefs.SetInt("PlayerSpawnID", playerSpawnID);
-        PlayerPrefs.SetString("CurrentScene", currentScene);
-        PlayerPrefs.Save();
+        playerHealth = playerMaxHealth;
+        // StartCoroutine(AutomaticSave());
     }
+
+    // Respawn le joueur avec toute sa vie
+    public void Respawn() 
+    {
+        if (player == null) player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
+        {
+            Debug.LogError("Player not found.");
+            return;
+        }
+        Health playerHealth = player.GetComponent<Health>();
+        if (playerHealth != null)
+        {
+            playerHealth.SetCurrentHealth(playerHealth.GetMaxHealth());
+            SceneTransitionManager.Instance.SetSpawnID(playerSpawnID);
+            player.GetComponent<PlayerController>()?.ResetPlayer();
+        }
+        else
+        {
+            Debug.LogError("Player Health component not found.");
+        }        
+    }
+
 }

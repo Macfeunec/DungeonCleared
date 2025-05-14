@@ -559,6 +559,7 @@ public class EnemyController : MonoBehaviour, IMovable
                 trailRenderer = hammerBody.GetComponentInChildren<TrailRenderer>();
                 break;
         }
+        trailRenderer.emitting = false;
     }
 
 
