@@ -18,7 +18,7 @@
 
 ## Ce que j'ai appris
 
-- Persistent Scene, Animator et Animations, TileSet et Rule Tiles, Trail Renderer et Particle System.
+- Persistent Scene, Animator et Animations, TileSet et Rule Tiles, Trail Renderer et Particle System, utilisation de Cinemachine et Depth of Field.
   
 ## Sources
 
