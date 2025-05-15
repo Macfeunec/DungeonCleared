@@ -5,8 +5,13 @@ using UnityEngine.SceneManagement;
 
 public class UIManager : MonoBehaviour
 {
-    public static UIManager Instance;
 
+    void Start()
+    {
+        if (PlayerManager.Instance != null) PlayerManager.Instance.enabled = false;   
+    }
+    // public static UIManager Instance;
+    /*
     void Awake()
     {
         if (Instance == null)
@@ -18,7 +23,7 @@ public class UIManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-    }
+    }*/
 
     public void Quit()
     {
@@ -29,6 +34,13 @@ public class UIManager : MonoBehaviour
 
     public void Play()
     {  
+        if (SceneTransitionManager.Instance != null) SceneTransitionManager.Instance.SetSpawnID(0);
+        if (PlayerManager.Instance != null) 
+        {
+            PlayerManager.Instance.enabled = true;
+            PlayerManager.Instance.playerMaxHealth = 100;
+            PlayerManager.Instance.playerHealth = 100;
+        }
         SceneFader.Instance.FadeToScene("Floor1");
     }
 }

@@ -1,7 +1,4 @@
-using Unity.VisualScripting.Antlr3.Runtime;
-using UnityEditor.SearchService;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class Health : MonoBehaviour
 {

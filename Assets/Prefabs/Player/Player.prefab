@@ -828,7 +828,7 @@ MonoBehaviour:
   isStopped: 0
   attackRange: 1
   attackDamage: 10
-  attackCooldown: 0.1
+  attackCooldown: 0.01
   knockBackDuration: 0.2
   maxStamina: 1000
   staminaCost: 300
@@ -854,8 +854,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 50
   currentHealth: 0
-  canRegenerate: 0
-  regenerationRate: 0
+  canRegenerate: 1
+  regenerationRate: 0.5
   isPlayer: 1
   isInvincible: 0
   damageEffect: {fileID: 2536943655439069875, guid: ded22a3ce8d6a9e4fb2bc1ccd76add11, type: 3}
