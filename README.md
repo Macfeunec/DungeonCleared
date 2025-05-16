@@ -6,7 +6,7 @@
 - Le but envisager, et qui donne du sens au titre du jeu, serait de réanimer les monstres du donjon qui ont été battus par les chevaliers, avec un système d'échange d'âme ou équivalent.
 
 - La version actuelle permet toutefois de se déplacer dans les 4 salles du donjons et de se battre avec les ennemis.
-- Les améliorations envisagées sont les suivantes : Système de sauvegarde, récolte de loot (âme) et intéraction avec les monstres, ajout d'une musique et de SFX, mise en pause du jeu.
+- Les améliorations envisagées sont les suivantes : Système de sauvegarde, récolte de loot (âme) et intéraction avec les monstres, ajout d'une musique et de SFX, mise en pause du jeu, ajout d'une barre de vie aux ennemis et nom de salle actuelle affichée.
 
 ![pic 1](menu.png)
 ![pic 2](combat.png)
